@@ -135,8 +135,6 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-
-
 #######################################
 # Launch Template
 #######################################
@@ -156,8 +154,6 @@ resource "aws_launch_template" "web" {
     }
   }
 }
-
-
 
 #######################################
 # Load Balancer + Target Group + Listener
@@ -236,57 +232,41 @@ resource "aws_autoscaling_group" "web_asg" {
 }
 
 #######################################
-# Scaling Policies + CloudWatch Alarms
+# Target Tracking Scaling Policy (CPU)
 #######################################
-resource "aws_autoscaling_policy" "scale_up" {
-  name                   = "${var.project_name}-scale-up-cpu"
+resource "aws_autoscaling_policy" "cpu_target_tracking" {
+  name                   = "${var.project_name}-cpu-target-tracking"
   autoscaling_group_name = aws_autoscaling_group.web_asg.name
-  policy_type            = "SimpleScaling"
+  policy_type            = "TargetTrackingScaling"
 
-  adjustment_type    = "ChangeInCapacity"  # ✅ OBLIGATOIRE
-  scaling_adjustment = 1                   # +1 instance
-  cooldown           = 300
-}
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
 
-resource "aws_autoscaling_policy" "scale_down" {
-  name                   = "${var.project_name}-scale-down-cpu"
-  autoscaling_group_name = aws_autoscaling_group.web_asg.name
-  policy_type            = "SimpleScaling"
-
-  adjustment_type    = "ChangeInCapacity"  # ✅ OBLIGATOIRE
-  scaling_adjustment = -1                  # -1 instance
-  cooldown           = 300
-}
-
-
-resource "aws_cloudwatch_metric_alarm" "high_cpu" {
-  alarm_name          = "${var.project_name}-high-cpu"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = 120
-  statistic           = "Average"
-  threshold           = 70
-  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
-
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.web_asg.name
+    target_value = 50  # objectif : 50% CPU moyenne
   }
 }
 
-resource "aws_cloudwatch_metric_alarm" "low_cpu" {
-  alarm_name          = "${var.project_name}-low-cpu"
-  comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = 120
-  statistic           = "Average"
-  threshold           = 30
-  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
+#######################################
+# Policies MANUELLES (pour forcer le scaling)
+#######################################
+resource "aws_autoscaling_policy" "manual_scale_up" {
+  name                   = "${var.project_name}-manual-scale-up"
+  autoscaling_group_name = aws_autoscaling_group.web_asg.name
+  policy_type            = "SimpleScaling"
 
-  dimensions = {
-    AutoScalingGroupName = aws_autoscaling_group.web_asg.name
-  }
+  adjustment_type    = "ChangeInCapacity"
+  scaling_adjustment = 1   # +1 instance
+  cooldown           = 60
+}
+
+resource "aws_autoscaling_policy" "manual_scale_down" {
+  name                   = "${var.project_name}-manual-scale-down"
+  autoscaling_group_name = aws_autoscaling_group.web_asg.name
+  policy_type            = "SimpleScaling"
+
+  adjustment_type    = "ChangeInCapacity"
+  scaling_adjustment = -1  # -1 instance
+  cooldown           = 60
 }
