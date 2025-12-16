@@ -1,6 +1,3 @@
-#######################################
-# Terraform & Provider
-#######################################
 terraform {
   required_providers {
     aws = {
@@ -12,21 +9,6 @@ terraform {
 
 provider "aws" {
   region = var.region
-}
-
-#######################################
-# Variables
-#######################################
-variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "sa-east-1"
-}
-
-variable "project_name" {
-  description = "Prefix for all resources"
-  type        = string
-  default     = "ilf-autoscaling-demo"
 }
 
 #######################################
@@ -181,15 +163,7 @@ resource "aws_launch_template" "web" {
 
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    yum update -y
-    yum install -y httpd
-    systemctl start httpd
-    systemctl enable httpd
-    echo "<h1>${var.project_name} - \$(hostname) - \$(date)</h1>" > /var/www/html/index.html
-  EOF
-  )
+  user_data = base64encode(file("${path.module}/user_data.sh"))
 
   tag_specifications {
     resource_type = "instance"
@@ -303,8 +277,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   period              = 120
   statistic           = "Average"
   threshold           = 70
-
-  alarm_actions = [aws_autoscaling_policy.scale_up.arn]
+  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.web_asg.name
@@ -320,23 +293,9 @@ resource "aws_cloudwatch_metric_alarm" "low_cpu" {
   period              = 120
   statistic           = "Average"
   threshold           = 30
-
-  alarm_actions = [aws_autoscaling_policy.scale_down.arn]
+  alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
 
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.web_asg.name
   }
-}
-
-#######################################
-# Outputs
-#######################################
-output "alb_dns_name" {
-  description = "URL du load balancer"
-  value       = aws_lb.web_alb.dns_name
-}
-
-output "asg_name" {
-  description = "Nom de l'Auto Scaling Group"
-  value       = aws_autoscaling_group.web_asg.name
 }
