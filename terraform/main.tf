@@ -135,30 +135,14 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-#######################################
-# AMI Amazon Linux 2
-#######################################
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
 
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
 
 #######################################
 # Launch Template
 #######################################
 resource "aws_launch_template" "web" {
   name_prefix   = "${var.project_name}-lt-"
-  image_id      = data.aws_ami.amazon_linux.id
+  image_id      = "ami-0c02fb55956c7d316"  # Amazon Linux 2 us-east-1
   instance_type = "t3.micro"
 
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
@@ -172,6 +156,8 @@ resource "aws_launch_template" "web" {
     }
   }
 }
+
+
 
 #######################################
 # Load Balancer + Target Group + Listener
@@ -256,17 +242,22 @@ resource "aws_autoscaling_policy" "scale_up" {
   name                   = "${var.project_name}-scale-up-cpu"
   autoscaling_group_name = aws_autoscaling_group.web_asg.name
   policy_type            = "SimpleScaling"
-  scaling_adjustment     = 1
-  cooldown               = 300
+
+  adjustment_type    = "ChangeInCapacity"  # ✅ OBLIGATOIRE
+  scaling_adjustment = 1                   # +1 instance
+  cooldown           = 300
 }
 
 resource "aws_autoscaling_policy" "scale_down" {
   name                   = "${var.project_name}-scale-down-cpu"
   autoscaling_group_name = aws_autoscaling_group.web_asg.name
   policy_type            = "SimpleScaling"
-  scaling_adjustment     = -1
-  cooldown               = 300
+
+  adjustment_type    = "ChangeInCapacity"  # ✅ OBLIGATOIRE
+  scaling_adjustment = -1                  # -1 instance
+  cooldown           = 300
 }
+
 
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   alarm_name          = "${var.project_name}-high-cpu"
