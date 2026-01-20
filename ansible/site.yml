@@ -1,0 +1,8 @@
+---
+- name: Configure infrastructure
+  hosts: all
+  become: yes
+  roles:
+    - common
+  post_tasks:
+    - include: playbooks/configure.yml
