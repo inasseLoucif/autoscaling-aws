@@ -14,7 +14,7 @@ Ce projet déploie une petite infra AWS pour tester l’auto‑scaling d’EC2 d
 ## Prérequis
 
 - Terraform 1.x, compte AWS configuré.
-- `main-1-1.tf`, `ec2_key.pub`, `lambda_function.py` à la racine du projet. 
+- `main.tf`, `ec2_key.pub`, `lambda_function.py` à la racine du projet. 
 
 ## Déploiement
 
