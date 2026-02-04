@@ -1,6 +1,6 @@
 # Terraform AWS – Scalability & Kill Switch
 
-Ce projet déploie une petite infra AWS pour tester l’auto‑scaling d’EC2 derrière un Application Load Balancer, plus un “kill switch” basé sur une Lambda déclenchée par SNS. 
+Ce projet déploie une  infrastructure AWS pour tester l’auto‑scaling d’EC2 derrière un Application Load Balancer, plus un “kill switch” basé sur une Lambda déclenchée par SNS. 
 
 ## Contenu
 
